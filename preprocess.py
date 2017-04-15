@@ -16,10 +16,7 @@ def transform(filename):
     df2 = np.array(df)
     #print(df.shape, df2.shape)
    
-    for j in range(df2.shape[1]): 
-        if j in [0,1,7,109]:
-            continue
-               
+    for j in range(df2.shape[1]):            
         dfj = set(df2[:,j])        
         #print(dfj)
         feature = []
@@ -31,29 +28,26 @@ def transform(filename):
         #print(df[df.columns[5]][:10])
         if df.columns[j] == 'Income':
             #print(df[df.columns[j]][:10]) 
-            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=[np.nan,"under $25,000",
+            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["under $25,000",
                 "$25,001 - $50,000","$50,000 - $74,999","$75,000 - $100,000","$100,001 - $150,000",
                 "over $150,000"], ordered=False).values     
             #print(df[df.columns[j]][50:70])      
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.insert(np.arange(len(feature),dtype=float),[0],[np.nan]))
+            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
             df[df.columns[j]].astype(int).values
             #print(df[df.columns[j]][50:70])   
 
         elif df.columns[j] == 'EducationLevel':            
             #print(df[df.columns[j]][:10]) 
-            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=[np.nan,"Current K-12",
+            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["Current K-12",
                 "High School Diploma","Current Undergraduate","Associate's Degree", 
                 "Bachelor's Degree","Master's Degree","Doctoral Degree"], ordered=False).values          
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.insert(np.arange(len(feature),dtype=float),[0],[np.nan]))
+            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
             df[df.columns[j]].astype(int).values     
             #print(df[df.columns[j]][:10]) 
                
         else:                       
             df[df.columns[j]] = df[df.columns[j]].astype('category', ordered=True).values
-            df[df.columns[j]] = df[df.columns[j]].cat.add_categories([np.nan])            
-            #print(df[df.columns[j]].cat.categories.values)
-            #print(df[df.columns[j]][:15])
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.insert(np.arange(len(feature),dtype=float),[len(feature)],[np.nan]))
+            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
             df[df.columns[j]].astype(int).values                        
             #print(df[df.columns[j]][:15])
         
@@ -77,17 +71,16 @@ def fill_missing(X, strategy, isClassified):
     """ your code here """
     
     if (isClassified == 0):       
-        for j in range(3,4):#X.shape[1]):
+        for j in range(6,7):#X.shape[1]):
             name = X.columns[j]
             Col_j = np.array(X[name])
                        
-            #print(X[name][60:70]) 
-            mean = np.nanmean(Col_j,axis=0)
-            for i in range(len(Col_j)):
-                if (np.isnan(Col_j[i])):                
-                    #X[name][i] = mean
-                    break
-            #print(X[name][60:70])    
+            print(X[name][60:70])
+            mean = np.nanmean(Col_j,axis=0)    
+            X[name] = X[name].cat.add_categories([mean])            
+            X[name] = X[name].fillna(mean)
+            
+            print(X[name][60:70])
             
                   
     #return X_full
