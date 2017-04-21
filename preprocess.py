@@ -129,22 +129,22 @@ def fill_missing(Y, strategy, isClassified):
         X_full = X 
         return X_full
     
-def main():
-    ## Read the raw data with pandas.read_csv()
-    #df = pd.read_csv('data/train.csv', index_col = None, na_values=["?"])
-    #df.replace('?', np.NaN)
-    #print(len(df.dtypes))
-    filename = 'data/train.csv'
-    Dict = transform(filename)
-    x = Dict['data']
-    y = Dict['target']
-    
-    #print(X.shape, y.shape)
-    
-    X_fill = fill_missing(x, 'mean', True)
-    #print(x[341:342])
-    #print(X_fill[310:311])
-
-if __name__ == '__main__':
-    main()
+#def main():
+#    ## Read the raw data with pandas.read_csv()
+#    #df = pd.read_csv('data/train.csv', index_col = None, na_values=["?"])
+#    #df.replace('?', np.NaN)
+#    #print(len(df.dtypes))
+#    filename = 'data/train.csv'
+#    Dict = transform(filename)
+#    x = Dict['data']
+#    y = Dict['target']
+#    
+#    #print(X.shape, y.shape)
+#    
+#    X_fill = fill_missing(x, 'mean', True)
+#    #print(x[341:342])
+#    #print(X_fill[310:311])
+#
+#if __name__ == '__main__':
+#    main()
     
