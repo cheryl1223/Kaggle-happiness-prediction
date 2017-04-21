@@ -12,7 +12,8 @@ def transform(filename):
     """ preprocess the training data"""
     """ your code here """
     
-    df = filename
+    df = pd.read_csv(filename, index_col = None, na_values=["?"])
+    df.replace('?', np.NaN)
     #print(df[:15])
 
     df2 = np.array(df)
@@ -58,13 +59,13 @@ def transform(filename):
             #print(df[df.columns[j]][:15])
         
     #print(df[:15])
-    
+    #print(df[341:346])
     target = df['Happy']
     data = df.drop('Happy',axis=1)
        
     return {'data':data,'target':target}
 
-def fill_missing(X, strategy, isClassified):
+def fill_missing(Y, strategy, isClassified):
     """
      @X: input matrix with missing data filled by nan
      @strategy: string, 'median', 'mean', 'most_frequent'
@@ -75,36 +76,36 @@ def fill_missing(X, strategy, isClassified):
      fill in the missing data
     """
     """ your code here """
-    
+    X = Y.copy()
     if (isClassified == True):
         groups = X.groupby(['Gender', 'Income'])
         #print(groups.dtypes)
-        X_full = pd.DataFrame()
         
-        for key,values in groups:
-            #print(key)
-            for j in range(values.shape[1]):                  
-                name = values.columns[j]                
+        for key,k_values in groups:
+            #print(key)            
+            #print(k_values.shape)
+            for j in range(k_values.shape[1]):
+                name = k_values.columns[j]
                 #print(values[name][:5])
-                #print(name)
-                temp = np.array(values[name])
+                temp = np.array(k_values[name])
                 if (strategy == 'median'):
                     fill_value = np.nanmedian(temp, axis = 0)
                 if (strategy == 'mean'):
                     fill_value = np.nanmean(temp, axis = 0)
                 if (strategy == 'mode'):
                     fill_value = mode(temp,axis=0).mode[0]       
+                
+                INDEX = k_values.index.values
 
                 if (name == 'UserID' or name == 'YOB' or name == 'votes'):
-                        values.loc[:, name] =values.loc[:, name].fillna(fill_value)
+                    X.loc[INDEX,name] = X.loc[INDEX,name].fillna(fill_value)
                 else:
-                    #print(values.loc[:, name].cat.categories)
-                    if fill_value not in values.loc[:, name].cat.categories:                       
-                        values.loc[:, name] = values.loc[:, name].cat.add_categories([fill_value])
-                        #print(values.loc[:, name].cat.categories)
-                    values.loc[:, name]=values.loc[:, name].fillna(fill_value)         
-                #print(values[name][:5])
-            X_full.append(values)
+                    if fill_value not in X.loc[:, name].cat.categories:                       
+                        X.loc[:, name] = X.loc[:, name].cat.add_categories([fill_value])
+                    X.loc[INDEX,name] = X.loc[INDEX,name].fillna(fill_value)
+                    
+        X_full = X.dropna()
+        #print(X_full.shape)
         return X_full
     
     if (isClassified == False):        
@@ -130,22 +131,19 @@ def fill_missing(X, strategy, isClassified):
     
 def main():
     ## Read the raw data with pandas.read_csv()
-    df = pd.read_csv('data/train.csv', index_col = None, na_values=["?"])
-    df.replace('?', np.NaN)
+    #df = pd.read_csv('data/train.csv', index_col = None, na_values=["?"])
+    #df.replace('?', np.NaN)
     #print(len(df.dtypes))
-    
-    Dict = transform(df)
-    X = Dict['data']
+    filename = 'data/train.csv'
+    Dict = transform(filename)
+    x = Dict['data']
     y = Dict['target']
     
-    print(X.shape, y.shape)
-
-    #cats = pd.Categorical([1,0], categories=[1,0])
-    #print(Dict['data']['Gender'].groupby(cats).mean())
+    #print(X.shape, y.shape)
     
-    X_fill = fill_missing(X, 'mean', True)
-    print(X[340:347])
-    print(X_fill[340:347])
+    X_fill = fill_missing(x, 'mean', True)
+    #print(x[341:342])
+    #print(X_fill[310:311])
 
 if __name__ == '__main__':
     main()
