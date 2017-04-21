@@ -78,11 +78,14 @@ def fill_missing(X, strategy, isClassified):
     
     if (isClassified == True):
         groups = X.groupby(['Gender', 'Income'])
-
-        for key,values in groups:  
-            print(key)
-            for j in range(values.shape[1]):
-                name = values.columns[j]
+        #print(groups.dtypes)
+        X_full = pd.DataFrame()
+        
+        for key,values in groups:
+            #print(key)
+            for j in range(values.shape[1]):                  
+                name = values.columns[j]                
+                #print(values[name][:5])
                 #print(name)
                 temp = np.array(values[name])
                 if (strategy == 'median'):
@@ -93,17 +96,17 @@ def fill_missing(X, strategy, isClassified):
                     fill_value = mode(temp,axis=0).mode[0]       
 
                 if (name == 'UserID' or name == 'YOB' or name == 'votes'):
-                        s =values.loc[:, name].fillna(fill_value)
-                        values.loc[:, name] = s
+                        values.loc[:, name] =values.loc[:, name].fillna(fill_value)
                 else:
+                    #print(values.loc[:, name].cat.categories)
                     if fill_value not in values.loc[:, name].cat.categories:                       
-                        s = values.loc[:, name].cat.add_categories([fill_value])
-                        values.loc[:, name]=s
-                    s=values.loc[:, name].fillna(fill_value) 
-                    values.loc[:, name] = s   
-                
-            
-
+                        values.loc[:, name] = values.loc[:, name].cat.add_categories([fill_value])
+                        #print(values.loc[:, name].cat.categories)
+                    values.loc[:, name]=values.loc[:, name].fillna(fill_value)         
+                #print(values[name][:5])
+            X_full.append(values)
+        return X_full
+    
     if (isClassified == False):        
         for j in range(X.shape[1]):
             name = X.columns[j]            
@@ -121,10 +124,9 @@ def fill_missing(X, strategy, isClassified):
             else:  
                 if (strategy == 'mean'):
                     X[name] = X[name].cat.add_categories([fill_value])
-                X[name] = X[name].fillna(fill_value)
-                
-    X_full = X  
-    return X_full
+                X[name] = X[name].fillna(fill_value)                
+        X_full = X 
+        return X_full
     
 def main():
     ## Read the raw data with pandas.read_csv()
@@ -140,9 +142,10 @@ def main():
 
     #cats = pd.Categorical([1,0], categories=[1,0])
     #print(Dict['data']['Gender'].groupby(cats).mean())
-
+    
     X_fill = fill_missing(X, 'mean', True)
-    #print(X[340:347])
+    print(X[340:347])
+    print(X_fill[340:347])
 
 if __name__ == '__main__':
     main()
