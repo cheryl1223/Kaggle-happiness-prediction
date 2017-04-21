@@ -92,7 +92,7 @@ def fill_missing(Y, strategy, isClassified):
                     fill_value = np.nanmedian(temp, axis = 0)
                 if (strategy == 'mean'):
                     fill_value = np.nanmean(temp, axis = 0)
-                if (strategy == 'mode'):
+                if (strategy == 'most_frequent'):
                     fill_value = mode(temp,axis=0).mode[0]       
                 
                 INDEX = k_values.index.values
@@ -117,7 +117,7 @@ def fill_missing(Y, strategy, isClassified):
                 fill_value = np.nanmedian(Col_j, axis = 0)
             if (strategy == 'mean'):
                 fill_value = np.nanmean(Col_j, axis = 0)
-            if (strategy == 'mode'):
+            if (strategy == 'most_frequent'):
                 fill_value = mode(Col_j,axis=0).mode[0]
  
             if (name == 'UserID' or name == 'YOB' or name == 'votes'):            
