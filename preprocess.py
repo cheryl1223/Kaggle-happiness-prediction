@@ -15,7 +15,9 @@ def transform(filename):
     df = pd.read_csv(filename, index_col = None, na_values=["?"])
     df.replace('?', np.NaN)
     #print(df[:15])
-
+    df = df.drop("UserID",1)
+    #print(list(df))
+    #print(df["Happy"].unique())
     df2 = np.array(df)
     #print(df.shape, df2.shape)
    
@@ -49,8 +51,22 @@ def transform(filename):
                 "High School Diploma","Current Undergraduate","Associate's Degree", 
                 "Bachelor's Degree","Master's Degree","Doctoral Degree"], ordered=False).values          
             df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
-            df[df.columns[j]].astype(int).values     
+            df[df.columns[j]].astype(int).values
+
+        elif df.columns[j] == 'Party':            
             #print(df[df.columns[j]][:10]) 
+            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["Lbertarian","Democrat",
+                "Other","Republican", "Independent"], ordered=False).values          
+            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
+            df[df.columns[j]].astype(int).values     
+            #print(df[df.columns[j]][:10])
+
+        elif df.columns[j] == 'HouseholdStatus':            
+            #print(df[df.columns[j]][:10]) 
+            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["Single (no kids)","Married (no kids)",
+                "Domestic Partners (no kids)","Domestic Partners (w/kids)", "Single (w/kids)", "Married (w/kids)"], ordered=False).values          
+            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
+            df[df.columns[j]].astype(int).values 
                
         else:                       
             df[df.columns[j]] = df[df.columns[j]].astype('category', ordered=True).values
@@ -60,8 +76,13 @@ def transform(filename):
         
     #print(df[:15])
     #print(df[341:346])
-    target = df['Happy']
-    data = df.drop('Happy',axis=1)
+    data = df
+    target = []
+    for j in range(df2.shape[1]): 
+        if df.columns[j] == 'Happy':
+            target = df['Happy']
+            data = df.drop('Happy',axis=1)
+            break
        
     return {'data':data,'target':target}
 
@@ -92,7 +113,7 @@ def fill_missing(Y, strategy, isClassified):
                     fill_value = np.nanmedian(temp, axis = 0)
                 if (strategy == 'mean'):
                     fill_value = np.nanmean(temp, axis = 0)
-                if (strategy == 'most_frequent'):
+                if (strategy == 'mode'):
                     fill_value = mode(temp,axis=0).mode[0]       
                 
                 INDEX = k_values.index.values
