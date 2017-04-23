@@ -15,7 +15,7 @@ def transform(filename):
     df = pd.read_csv(filename, index_col = None, na_values=["?"])
     df.replace('?', np.NaN)
     #print(df[:15])
-    df = df.drop("UserID",1)
+    #df = df.drop("UserID",1)
     #print(list(df))
     #print(df["Happy"].unique())
     df2 = np.array(df)
