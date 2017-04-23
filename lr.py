@@ -31,21 +31,19 @@ class LogisticRegression:
         h = np.reshape(h, (len(h), 1))
         error = np.transpose(h-y)
 
-        gradient = np.dot(error,X)
-        
+        gradient = (np.dot(error,X)) #/m
+
         return gradient
 
     def fit(self, X, y):
         """ your code here """
         X = np.array(X, dtype = float)
-        #X = X[:, 1:]
         y = np.reshape(y, (len(y), 1))
 
-        #for c in range(X.shape[1]):
-        #    X[:,c] = X[:,c] - np.mean(X[:,c])
+        #X = np.insert(X, 0, 1, axis = 1)
 
-        scaler = preprocessing.MaxAbsScaler().fit(X[:,:2])
-        X[:,:2] = scaler.transform(X[:,:2])
+        scaler = preprocessing.MinMaxScaler()
+        X = scaler.fit_transform(X)
 
         self.coef_ = np.zeros((X.shape[1],1))
 
@@ -60,11 +58,18 @@ class LogisticRegression:
     def predict(self, X):
         """ your code here """
         X = np.array(X, dtype = float)
-        scaler = preprocessing.MaxAbsScaler().fit(X[:,:2])
-        X[:,:2] = scaler.transform(X[:,:2])
+        #X = np.insert(X, 0, 1, axis = 1)
+
+        scaler = preprocessing.MinMaxScaler()
+        X = scaler.fit_transform(X)
 
         probability = self.sigmoid(np.dot(X,self.coef_))
         y = [1 if x >= 0.5 else 0 for x in probability]
 
         return y
 
+    def score(self, X, y):
+        y_pred = self.predict(X)
+        correct = [1 if ((a == 1 and b == 1) or (a == 0 and b == 0)) else 0 for (a, b) in zip(y_pred, y)]
+        accuracy = (np.sum(correct)) / len(correct)
+        return accuracy
