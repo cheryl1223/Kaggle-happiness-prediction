@@ -38,6 +38,7 @@ class LogisticRegression:
     def fit(self, X, y):
         """ your code here """
         X = np.array(X, dtype = float)
+        y = np.array(y)
         y = np.reshape(y, (len(y), 1))
 
         #X = np.insert(X, 0, 1, axis = 1)
