@@ -1,5 +1,6 @@
 from sklearn.preprocessing import LabelBinarizer
 import numpy as np
+#from sklearn import preprocessing
 
 class NaiveBayes:
     def __init__(self):
@@ -18,14 +19,21 @@ class NaiveBayes:
         self._num_class = self._y_label.shape[0]
 
         samp_num = X.shape[0]
+        #print(samp_num)
         self._feat_num = X.shape[1]
 
         self._log_pik = np.zeros((self._num_class,self._feat_num))
+        #print(y.shape)
+        X = np.array(X, dtype = float)
+        y = np.array(y)
+        y = np.reshape(y, (len(y), 1))
+        #scaler = preprocessing.MinMaxScaler()
+        #X = scaler.fit_transform(X)
 
         for i in range(samp_num):
-        	for j in range(self._num_class):
-        		if(y[i] == self._y_label[j]):
-        			self._log_pik[j,:] = self._log_pik[j,:]+ X.iloc[i,:].values
+            for j in range(self._num_class):
+                if(y[i] == self._y_label[j]):
+                    self._log_pik[j,:] = self._log_pik[j,:]+ X[i,:]
 
 
         for j in range(self._num_class):
