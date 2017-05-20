@@ -41,10 +41,10 @@ happiness[1,:] = happiness[1,:]/sum_happiness
 #print(happiness.sum(0))
 
 ind = np.arange(N)
-width = 0.35
+width = 0.25
 fig, ax = plt.subplots()
-rects1 = ax.bar(ind, happiness[0,:], width, color='blue')
-rects2 = ax.bar(ind + width, happiness[1,:], width, color='lightgreen')
+rects1 = ax.bar(ind, happiness[0,:], width, color='gold')
+rects2 = ax.bar(ind + width, happiness[1,:], width, color='lightskyblue')
 
 ax.set_title("Bar chart of income and happiness")
 ax.set_xlabel("Income levels")
@@ -63,5 +63,5 @@ def autolabel(rects):
 
 autolabel(rects1)
 autolabel(rects2)
-
+plt.savefig("bar_chart")
 plt.show()

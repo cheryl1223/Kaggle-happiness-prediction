@@ -1,75 +1,84 @@
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer,binarize
 import numpy as np
-#from sklearn import preprocessing
 
 class NaiveBayes:
-    def __init__(self):
-        """ your code here """
-        self._alpha = 1.0
+    def __init__(self, binarize=.0, fit_prior=True,
+                 class_prior=None):
+        self.binarize = binarize
+        self.fit_prior = fit_prior
+        self.class_prior = class_prior
 
-    def fit(self, X, y):
-        """ your code here """
+    def _count(self, X, Y):
+        """Count and smooth feature occurrences."""
+        if self.binarize is not None:
+            X = binarize(X, threshold=self.binarize)
+        self.feature_count_ += np.dot(Y.T, X)
+        self.class_count_ += Y.sum(axis=0)
 
-        assert X.shape[0] == y.shape[0], "X and y must be consistent"
+    def _update_feature_log_prob(self):
+        self.feature_log_prob_ = (np.log(self.feature_count_ ) -
+                                  np.log(self.class_count_ .reshape(-1, 1)))
+
+    def _joint_log_likelihood(self, X):
+        """Calculate the posterior log probability of the samples X"""
+
+        if self.binarize is not None:
+            X = binarize(X, threshold=self.binarize)
+
+        n_classes, n_features = self.feature_log_prob_.shape
+        n_samples, n_features_X = X.shape
+
+        if n_features_X != n_features:
+            raise ValueError("Expected input with %d features, got %d instead"
+                             % (n_features, n_features_X))
+
+        neg_prob = np.log(1 - np.exp(self.feature_log_prob_))
+        # Compute  neg_prob · (1 - X).T  as  ∑neg_prob - X · neg_prob
+        jll = np.dot(X, (self.feature_log_prob_ - neg_prob).T)
+        jll += self.class_log_prior_ + neg_prob.sum(axis=1)
+
+        return jll
+    def _update_class_log_prior(self, class_prior=None):
+        n_classes = len(self.classes_)
+        if class_prior is not None:
+            if len(class_prior) != n_classes:
+                raise ValueError("Number of priors must match number of"
+                                 " classes.")
+            self.class_log_prior_ = np.log(class_prior)
+        elif self.fit_prior:
+            # empirical prior, with sample_weight taken into account
+            self.class_log_prior_ = (np.log(self.class_count_) -
+                                     np.log(self.class_count_.sum()))
+        else:
+            self.class_log_prior_ = np.zeros(n_classes) - np.log(n_classes)
+
+    def fit(self, X, y, sample_weight=None):
+
+        _, n_features = X.shape
 
         labelbin = LabelBinarizer()
         Y = labelbin.fit_transform(y)
-        self._y_label = np.sort(y.unique())
-        #print(self._y_label)
-        self._num_class = self._y_label.shape[0]
+        self.classes_ = labelbin.classes_
+        if Y.shape[1] == 1:
+            Y = np.concatenate((1 - Y, Y), axis=1)
 
-        samp_num = X.shape[0]
-        #print(samp_num)
-        self._feat_num = X.shape[1]
+        Y = Y.astype(np.float64)
+        if sample_weight is not None:
+            sample_weight = np.atleast_2d(sample_weight)
+            Y *= check_array(sample_weight).T
 
-        self._log_pik = np.zeros((self._num_class,self._feat_num))
-        #print(y.shape)
-        X = np.array(X, dtype = float)
-        y = np.array(y)
-        y = np.reshape(y, (len(y), 1))
-        #scaler = preprocessing.MinMaxScaler()
-        #X = scaler.fit_transform(X)
+        class_prior = self.class_prior
 
-        for i in range(samp_num):
-            for j in range(self._num_class):
-                if(y[i] == self._y_label[j]):
-                    self._log_pik[j,:] = self._log_pik[j,:]+ X[i,:]
-
-
-        for j in range(self._num_class):
-        	self._log_pik[j,:] = (self._log_pik[j,:] + self._alpha) / (self._log_pik.sum(1)[j] + self._alpha * self._feat_num)
-
-        self._log_pik = np.log(self._log_pik)
-
-        #print(self._log_pik.shape)
-
-        #priori calculation
-        self._log_prio = []
-        for i in self._y_label:
-        	p = (y!=i).sum()/y.size
-        	p = np.log(p)
-        	self._log_prio.append(p)
-
-        self._log_prio = np.array(self._log_prio)[:,np.newaxis]
-
-        #print(self._log_prio.shape)
-    	#print(y_log_prio[0])
-    	#print(y_log_prio[1])
+        n_effective_classes = Y.shape[1]
+        self.class_count_ = np.zeros(n_effective_classes, dtype=np.float64)
+        self.feature_count_ = np.zeros((n_effective_classes, n_features),
+                                       dtype=np.float64)
+        self._count(X, Y)
+        self._update_feature_log_prob()
+        self._update_class_log_prior(class_prior=class_prior)
         return self
 
     def predict(self, X):
-        """ your code here """
-        X_T = np.transpose(np.array(X))
-
-        #print("hhhh",X_T)
-        #print(self._log_prio)
-        #print(self._log_pik)
-
-        y = np.zeros((X.shape[0],1))
-        prediction = np.dot(self._log_pik,X_T) + self._log_prio
-        prediction = np.transpose(prediction)
-
-        y = np.argmax(prediction,axis=1)
-        #print(y)
-        return y
+        jll = self._joint_log_likelihood(X)
+        return self.classes_[np.argmax(jll, axis=1)]
 

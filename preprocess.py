@@ -2,170 +2,146 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import mode
+from math import isnan
 from sklearn import datasets, linear_model, preprocessing
 import seaborn
 seaborn.set()
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import Imputer   
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler
+from sklearn import cross_validation
 
+import warnings
+warnings.filterwarnings("ignore")
 
 def transform(filename):
-    """ preprocess the training data"""
-    """ your code here """
-    
     df = pd.read_csv(filename, index_col = None, na_values=["?"])
     df.replace('?', np.NaN)
-    #print(df[:15])
-    #df = df.drop("UserID",1)
-    #print(list(df))
-    #print(df["Happy"].unique())
-    df2 = np.array(df)
-    #print(df.shape, df2.shape)
-   
-    for j in range(df2.shape[1]):
-        if (df.columns[j] == 'UserID' or df.columns[j] == 'YOB' or
-            df.columns[j] == 'votes' or df.columns[j] == 'Happy'):
-            continue
-        
-        dfj = set(df2[:,j])        
-        #print(dfj)
-        feature = []
-        for x in dfj:
-            if type(x) == float and np.isnan(x) == True:
-                continue
-            else:
-                feature.append(x)   
-        #print(df[df.columns[5]][:10])
-        if df.columns[j] == 'Income':
-            #print(df[df.columns[j]][:10]) 
-            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["under $25,000",
-                "$25,001 - $50,000","$50,000 - $74,999","$75,000 - $100,000","$100,001 - $150,000",
-                "over $150,000"], ordered=False).values     
-            #print(df[df.columns[j]][50:70])      
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
-            df[df.columns[j]].astype(int).values
-            #print(df[df.columns[j]][50:70])   
-
-        elif df.columns[j] == 'EducationLevel':            
-            #print(df[df.columns[j]][:10]) 
-            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["Current K-12",
-                "High School Diploma","Current Undergraduate","Associate's Degree", 
-                "Bachelor's Degree","Master's Degree","Doctoral Degree"], ordered=False).values          
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
-            df[df.columns[j]].astype(int).values
-
-        elif df.columns[j] == 'Party':            
-            #print(df[df.columns[j]][:10]) 
-            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["Lbertarian","Democrat",
-                "Other","Republican", "Independent"], ordered=False).values          
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
-            df[df.columns[j]].astype(int).values     
-            #print(df[df.columns[j]][:10])
-
-        elif df.columns[j] == 'HouseholdStatus':            
-            #print(df[df.columns[j]][:10]) 
-            df[df.columns[j]] = df[df.columns[j]].astype('category', categories=["Single (no kids)","Married (no kids)",
-                "Domestic Partners (no kids)","Domestic Partners (w/kids)", "Single (w/kids)", "Married (w/kids)"], ordered=False).values          
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
-            df[df.columns[j]].astype(int).values 
-               
-        else:                       
-            df[df.columns[j]] = df[df.columns[j]].astype('category', ordered=True).values
-            df[df.columns[j]] = df[df.columns[j]].cat.rename_categories(np.arange(len(feature),dtype=float))
-            df[df.columns[j]].astype(int).values                        
-            #print(df[df.columns[j]][:15])
-        
-    #print(df[:15])
-    #print(df[341:346])
-    data = df
     target = []
-    for j in range(df2.shape[1]): 
-        if df.columns[j] == 'Happy':
-            target = df['Happy']
-            data = df.drop('Happy',axis=1)
-            break
-       
+    if 'Happy' in df.columns:
+        target = df['Happy']
+        df = df.drop('Happy', axis = 1) 
+    UserID = df[['UserID']]
+    numeric_col = df[['YOB', 'votes']]
+    categorical_col = df[['Income','HouseholdStatus','EducationLevel','Party']]
+    binary_col = df.drop(['UserID','YOB','Income','HouseholdStatus',\
+                        'EducationLevel','Party','votes'],axis = 1)
+
+    #one_hot = pd.get_dummies(categorical_col)
+    for i in categorical_col:
+        if i == 'Income':
+            categorical_col['Income']=categorical_col['Income'].map({"under $25,000":0,
+                "$25,001 - $50,000":1,"$50,000 - $74,999":2,"$75,000 - $100,000":3,"$100,001 - $150,000":4,\
+                "over $150,000":5})
+        if i == 'HouseholdStatus':
+            categorical_col['HouseholdStatus']=categorical_col['HouseholdStatus'].map({"Single (no kids)":0,\
+                "Married (no kids)":1,"Domestic Partners (no kids)":2,"Domestic Partners (w/kids)":3,\
+                "Single (w/kids)":4, "Married (w/kids)":5})
+        if i == 'EducationLevel':
+            categorical_col['EducationLevel'] = categorical_col['EducationLevel'].map({"Current K-12":0,\
+                "High School Diploma":1,"Current Undergraduate":2,"Associate's Degree":3,\
+                "Bachelor's Degree":4,"Master's Degree":5,"Doctoral Degree":6})
+        if i == 'Party':
+            categorical_col['Party'] = categorical_col['Party'].map({"Libertarian":0,"Democrat":1,\
+                "Other":2,"Republican":3, "Independent":4})
+
+    for i in binary_col: 
+        if i == 'Gender':
+            binary_col[i] = binary_col[i].map({'Male': 0, 'Female': 1})
+
+        types = binary_col[i].unique()
+        types = [x for x in types if str(x) != 'nan']
+        binary_col[i] = binary_col[i].map({types[0]: 0, types[1]: 1})
+
+    #binary_col = fill_missing(binary_col,'mean', False)
+    #numeric_col = fill_missing(numeric_col,'mean', False)
+    #categorical_col = fill_missing(categorical_col,'mean', False)
+    data = pd.concat([UserID, numeric_col,categorical_col,binary_col], axis=1)
     return {'data':data,'target':target}
 
-def fill_missing(Y, strategy, isClassified):
-    """
-     @X: input matrix with missing data filled by nan
-     @strategy: string, 'median', 'mean', 'most_frequent'
-     @isclassfied: boolean value, if isclassfied == true, then you need build a
-     decision tree to classify users into different classes and use the
-     median/mean/mode values of different classes to fill in the missing data;
-     otherwise, just take the median/mean/most_frequent values of input data to
-     fill in the missing data
-    """
-    """ your code here """
-    X = Y.copy()
+def fill_missing(X, strategy, isClassified):
+    imp = Imputer(missing_values='NaN', strategy=strategy, axis=1)
+    if (isClassified == False): 
+        for column in X:
+            X[column] = np.transpose(imp.fit_transform([X[column]]))
     if (isClassified == True):
-        groups = X.groupby(['Gender', 'Income'])
-        #print(groups.dtypes)
-        
-        for key,k_values in groups:
-            #print(key)            
-            #print(k_values.shape)
-            for j in range(k_values.shape[1]):
-                name = k_values.columns[j]
-                #print(values[name][:5])
-                temp = np.array(k_values[name])
-                if (strategy == 'median'):
-                    fill_value = np.nanmedian(temp, axis = 0)
-                if (strategy == 'mean'):
-                    fill_value = np.nanmean(temp, axis = 0)
-                if (strategy == 'mode'):
-                    fill_value = mode(temp,axis=0).mode[0]       
-                
-                INDEX = k_values.index.values
 
-                if (name == 'UserID' or name == 'YOB' or name == 'votes'):
-                    X.loc[INDEX,name] = X.loc[INDEX,name].fillna(fill_value)
-                else:
-                    if fill_value not in X.loc[:, name].cat.categories:                       
-                        X.loc[:, name] = X.loc[:, name].cat.add_categories([fill_value])
-                    X.loc[INDEX,name] = X.loc[INDEX,name].fillna(fill_value)
-                    
-        X_full = X.dropna()
-        #print(X_full.shape)
-        return X_full
+        X['Gender'] = np.transpose(imp.fit_transform([X['Gender']]))
+        X['Income'] = np.transpose(imp.fit_transform([X['Income']]))
+        groups = X.groupby(['Gender', 'Income'])
+
+        for key,values in groups:
+            for column in values:
+                name = values[column]
+                temp = np.array(values[column])     
+                fill_value = np.transpose(imp.fit_transform(temp))
+                INDEX = values[column].index.values
+                X.loc[INDEX,column] = fill_value
+        #X = X.dropna()
+        #X = X.sort('UserID')
+    return X  
+
+def normalize(X):
+    scaler = StandardScaler() 
+    X['YOB'] = np.transpose(scaler.fit_transform(X['YOB']))
+    X['votes'] = np.transpose(scaler.fit_transform(X['votes']))
+    return X
+
+def main():
+    # load training data
+    print("####################################################") 
+    print("Data preprocessing...")   
+    filename = 'data/train.csv'
+    Dict = transform(filename)
+
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(
+        Dict['data'],Dict['target'], test_size=0.2, random_state=0)
     
-    if (isClassified == False):        
-        for j in range(X.shape[1]):
-            name = X.columns[j]            
-            Col_j = np.array(X[name])
-            
-            if (strategy == 'median'):
-                fill_value = np.nanmedian(Col_j, axis = 0)
-            if (strategy == 'mean'):
-                fill_value = np.nanmean(Col_j, axis = 0)
-            if (strategy == 'most_frequent'):
-                fill_value = mode(Col_j,axis=0).mode[0]
- 
-            if (name == 'UserID' or name == 'YOB' or name == 'votes'):            
-                X[name] = X[name].fillna(fill_value)   
-            else:  
-                if (strategy == 'mean'):
-                    X[name] = X[name].cat.add_categories([fill_value])
-                X[name] = X[name].fillna(fill_value)                
-        X_full = X 
-        return X_full
-    
-#def main():
-#    ## Read the raw data with pandas.read_csv()
-#    #df = pd.read_csv('data/train.csv', index_col = None, na_values=["?"])
-#    #df.replace('?', np.NaN)
-#    #print(len(df.dtypes))
-#    filename = 'data/train.csv'
-#    Dict = transform(filename)
-#    x = Dict['data']
-#    y = Dict['target']
-#    
-#    #print(X.shape, y.shape)
-#    
-#    X_fill = fill_missing(x, 'mean', True)
-#    #print(x[341:342])
-#    #print(X_fill[310:311])
-#
-#if __name__ == '__main__':
-#    main()
+    train = pd.concat([X_train,y_train],axis = 1)
+    print ("Cross validate on 10% of the whole dataset, training data shape: ", train.shape)
+    thresh = 0.2*train.shape[1]
+    train = train.dropna(thresh = thresh)
+    train = train.dropna(subset = ['Income','HouseholdStatus','EducationLevel'])
+
+    train = fill_missing(train,strategy = 'most_frequent',isClassified = False)
+
+    y = train['Happy']
+    df = train.drop('Happy',1)
+    numeric_col = df[['YOB', 'votes']]
+    #numeric_col = fill_missing(numeric_col,'mean',False)
+    normalized = pd.DataFrame(normalize(numeric_col))
+    categorical_col = df[['Income','HouseholdStatus','EducationLevel','Party']]
+    #categorical_col = fill_missing(categorical_col,'median',False)
+    binary_col = df.drop(['UserID','YOB','Income','HouseholdStatus',\
+                        'EducationLevel','Party','votes'],axis = 1)
+
+    encoder = OneHotEncoder()
+    #one_hot = pd.get_dummies(categorical_col)
+    one_hot = pd.DataFrame(encoder.fit_transform(categorical_col).toarray())
+
+    #X = pd.concat([normalized,one_hot,binary_col],axis = 1)
+
+    X = np.hstack((normalized,one_hot,binary_col))
+
+
+    X_test = fill_missing(X_test, strategy = 'most_frequent',isClassified = False)
+    UserID = X_test['UserID']
+
+    categorical_col = X_test[['Income','HouseholdStatus','EducationLevel','Party']]
+    numeric_col = X_test[['YOB', 'votes']]
+    binary_col = X_test.drop(['UserID','YOB','Income','HouseholdStatus',\
+                        'EducationLevel','Party','votes'],axis = 1)
+    one_hot = encoder.fit_transform(categorical_col).toarray()
+    normalized = normalize(numeric_col)
+
+    X_test = np.hstack((normalized,one_hot,binary_col))
+    X_a = X
+    X_b = X_test
+    y_a = y
+    y_b = y_test
+
+
+if __name__ == '__main__':
+    main()
     

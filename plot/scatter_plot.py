@@ -21,5 +21,5 @@ plt.scatter(YOB, Income, color='b', alpha=1, s=8)
 plt.title("Scatter plot of YOB and income")
 plt.xlabel("YOB (year of birth)")
 plt.ylabel("The income")
-
+plt.savefig("scatter_plot")
 plt.show()

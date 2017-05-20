@@ -7,62 +7,45 @@ class LogisticRegression:
     def __init__(self):
         """ your code here """
         self.coef_ = []
+        self.iter_ = 0
 
-    def sigmoid(self, M):
-        g = np.zeros(M.shape[0])
-        for i in range(M.shape[0]):
-            g[i] = 1.0 / (1.0 + math.exp(-M[i]))
-        return g
+    def sigmoid(self, scores):
+        return 1 / (1 + np.exp(-scores))
+    def log_likelihood(self, features, target, weights):
+        scores = np.dot(features, weights)
+        ll = np.sum( target*scores - np.log(1 + np.exp(scores)) )
+        return ll
+    def logistic_regression(self,features, target, num_steps, learning_rate, add_intercept = False):
+        if add_intercept:
+            intercept = np.ones((features.shape[0], 1))
+            features = np.hstack((intercept, features))
+            
+        weights = np.zeros(features.shape[1])
+        
+        for step in range(num_steps):
+            self.iter_ = self.iter_+1
+            scores = np.dot(features, weights)
+            predictions = self.sigmoid(scores)
+            previous = self.log_likelihood(features, target, weights)
+            # Update weights with gradient
+            output_error_signal = target - predictions
+            gradient = np.dot(features.T, output_error_signal)
+            weights += learning_rate * gradient
+            new =  self.log_likelihood(features, target, weights)
+            if new - previous < 0.00001:
 
-    def cost(self, theta, X, y):
-        h = self.sigmoid(np.dot(X,theta))
-        first = np.multiply(-y, np.log(h))
-        second = np.multiply((1 - y), np.log(1 - h))
-        return np.sum(first - second) / (X.shape[0])
-
-    def gradient(self, theta, X, y):
-        m = X.shape[0] # the num of training samples
-
-        #print(np.dot(X,self.coef_)[:10])
-
-        gradient = np.zeros(X.shape[1])
-
-        h = self.sigmoid(np.dot(X,theta))
-        h = np.reshape(h, (len(h), 1))
-        error = np.transpose(h-y)
-
-        gradient = (np.dot(error,X)) #/m
-
-        return gradient
-
+                break
+        print("Iteration number: ", self.iter_)            
+        return weights
     def fit(self, X, y):
-        """ your code here """
-        X = np.array(X, dtype = float)
-        y = np.array(y)
-        y = np.reshape(y, (len(y), 1))
+        weights = self.logistic_regression(X, y,
+                     num_steps = 50, learning_rate = 5e-5, add_intercept = True)
 
-        #X = np.insert(X, 0, 1, axis = 1)
-
-        scaler = preprocessing.MinMaxScaler()
-        X = scaler.fit_transform(X)
-
-        self.coef_ = np.zeros((X.shape[1],1))
-
-        result = opt.fmin_tnc(func=self.cost, x0=self.coef_, 
-            fprime=self.gradient, args=(X, y), messages=0)
-
-        self.coef_ = np.reshape(result[0], (len(result[0]),1))
-
+        self.coef_ = weights[1:]
         return self
 
 
     def predict(self, X):
-        """ your code here """
-        X = np.array(X, dtype = float)
-        #X = np.insert(X, 0, 1, axis = 1)
-
-        scaler = preprocessing.MinMaxScaler()
-        X = scaler.fit_transform(X)
 
         probability = self.sigmoid(np.dot(X,self.coef_))
         y = [1 if x >= 0.5 else 0 for x in probability]
